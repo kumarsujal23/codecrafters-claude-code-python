@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import json
 
 from openai import OpenAI
 
@@ -47,7 +48,21 @@ def main():
     print("Logs from your program will appear here!", file=sys.stderr)
 
     # TODO: Uncomment the following line to pass the first stage
-    print(chat.choices[0].message.content)
+    #print(chat.choices[0].message.content)
+
+    message=chat.choices[0].message
+    if message.tool_calls:
+        tool_call = message.tool_calls[0]
+        function_name=tool_call.function.name
+        if function_name == "Read":
+             arguments = json.loads(tool_call.function.arguments)
+             file_path = arguments["file_path"]
+             with open(file_path,'r') as f:
+                 content=f.read()
+             print(content)
+    else:
+        print(message.content)             
+
 
 
 if __name__ == "__main__":
