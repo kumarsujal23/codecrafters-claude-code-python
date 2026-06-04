@@ -29,6 +29,26 @@ def call_api(messages):
       "required": ["file_path"]
     }
   }
+},{
+  "type": "function",
+  "function": {
+    "name": "Write",
+    "description": "Write content to a file",
+    "parameters": {
+      "type": "object",
+      "required": ["file_path", "content"],
+      "properties": {
+        "file_path": {
+          "type": "string",
+          "description": "The path of the file to write to"
+        },
+        "content": {
+          "type": "string",
+          "description": "The content to write to the file"
+        }
+      }
+    }
+  }
 }]
     )
     if not chat.choices or len(chat.choices) == 0:
@@ -36,12 +56,23 @@ def call_api(messages):
     else:
         return chat
 
-def execute_tool(a):
-    arguments = json.loads(a)
-    file_path = arguments["file_path"]
-    with open(file_path,'r') as f:
-        content=f.read()
-    return content    
+def execute_tool(tool):
+
+    arguments = json.loads(tool.function.arguments)
+    if tool.function.name == "Read":
+
+        file_path = arguments["file_path"]
+        with open(file_path,'r') as f:
+            content=f.read()
+        return content    
+    elif tool.function.name == "Write":
+        file_path = arguments["file_path"]
+        content = arguments["content"]
+        with open(file_path,'w') as f:
+            f.write(content)
+        return "File written successfully"    
+
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -95,11 +126,9 @@ def main():
         if not m.tool_calls:
             print(m.content)
             break
-        for tool in m.tool_calls:
-            function_name=tool.function.name
-            if function_name == "Read":
-                res = execute_tool(tool.function.arguments)
-                messages.append({"role":"tool","tool_call_id":tool.id,"content":res})
+        for tool in m.tool_calls:           
+            res = execute_tool(tool)
+            messages.append({"role":"tool","tool_call_id":tool.id,"content":res})
 
 
             
